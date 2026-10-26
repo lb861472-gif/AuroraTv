@@ -1,0 +1,28 @@
+workflows:
+  auroratv-debug:
+    name: AuroraTV debug APK
+    instance_type: linux_x2
+    max_build_duration: 30
+    environment:
+      java: 17
+    scripts:
+      - name: Set Android SDK location
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
+      - name: Create Gradle wrapper (the wrapper jar is not stored in the repo)
+        script: |
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            mkdir -p /tmp/wrapgen
+            cd /tmp/wrapgen
+            echo "" > settings.gradle
+            gradle wrapper --gradle-version 8.5
+            cd "$CM_BUILD_DIR"
+            mkdir -p gradle/wrapper
+            cp /tmp/wrapgen/gradlew /tmp/wrapgen/gradlew.bat .
+            cp /tmp/wrapgen/gradle/wrapper/* gradle/wrapper/
+          fi
+          chmod +x ./gradlew
+      - name: Build debug APK
+        script: ./gradlew --no-daemon assembleDebug
+    artifacts:
+      - app/build/outputs/apk/debug/*.apk
